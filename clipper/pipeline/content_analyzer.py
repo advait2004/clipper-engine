@@ -141,6 +141,13 @@ def _ai_summarize(transcript_text: str, cfg: Config) -> str:
         f"Transcript: {text}"
     )
 
+    # Try NVIDIA
+    if cfg.AI_PROVIDER == "nvidia" or cfg.NVIDIA_API_KEY not in ("", "YOUR_NVIDIA_API_KEY_HERE"):
+        try:
+            return _summarize_nvidia(prompt, cfg.NVIDIA_API_KEY, cfg.NVIDIA_MODEL)
+        except Exception as e:
+            print(f"    NVIDIA summary failed: {e}")
+
     # Try Groq first (fast)
     if cfg.AI_PROVIDER == "groq" or cfg.GROQ_API_KEY not in ("", "YOUR_GROQ_API_KEY_HERE"):
         try:
@@ -157,6 +164,30 @@ def _ai_summarize(transcript_text: str, cfg: Config) -> str:
 
     # Fallback: first 100 chars
     return transcript_text[:100] + "..."
+
+
+def _summarize_nvidia(prompt: str, api_key: str, model: str) -> str:
+    """Summarize via NVIDIA API."""
+    import requests
+    import time
+
+    time.sleep(2)  # Rate limit protection
+    resp = requests.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "max_tokens": 100,
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
 
 
 def _summarize_groq(prompt: str, api_key: str, model: str) -> str:

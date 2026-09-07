@@ -20,6 +20,7 @@ class Config:
     # "gemini"  → free cloud (1,500 req/day, no credit card needed)
     # "ollama"  → fully local, zero cost, needs ollama installed
     # "groq"    → very fast cloud (generous free tier)
+    # "nvidia"  → high performance cloud API (NVIDIA NIM)
     AI_PROVIDER = "groq"
 
     # ─── Gemini (free tier) ───────────────────────────────────────────────────
@@ -39,6 +40,12 @@ class Config:
     # 2. Create API key
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL   = "llama-3.3-70b-versatile"
+
+    # ─── NVIDIA (Cloud API) ───────────────────────────────────────────────────
+    # 1. Go to https://build.nvidia.com/
+    # 2. Create API key
+    NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+    NVIDIA_MODEL   = "meta/llama-3.1-70b-instruct"
 
 
     # ─── Whisper transcription ────────────────────────────────────────────────

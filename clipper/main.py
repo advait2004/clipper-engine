@@ -183,6 +183,8 @@ def _two_pass_coarse_scan(
         rankings = scorer.score_gemini_coarse(prompt, cfg.GEMINI_API_KEY, cfg.GEMINI_MODEL)
     elif provider == "groq" and cfg.GROQ_API_KEY not in ("", "YOUR_GROQ_API_KEY_HERE"):
         rankings = scorer.score_groq_coarse(prompt, cfg.GROQ_API_KEY, cfg.GROQ_MODEL)
+    elif provider == "nvidia" and cfg.NVIDIA_API_KEY not in ("", "YOUR_NVIDIA_API_KEY_HERE"):
+        rankings = scorer.score_nvidia_coarse(prompt, cfg.NVIDIA_API_KEY, cfg.NVIDIA_MODEL)
 
     # Fallback: try other providers for coarse scoring
     if not rankings:
@@ -192,6 +194,9 @@ def _two_pass_coarse_scan(
         if not rankings and provider != "groq" and cfg.GROQ_API_KEY not in ("", "YOUR_GROQ_API_KEY_HERE"):
             print("  🔄 Trying Groq for coarse scan...")
             rankings = scorer.score_groq_coarse(prompt, cfg.GROQ_API_KEY, cfg.GROQ_MODEL)
+        if not rankings and provider != "nvidia" and cfg.NVIDIA_API_KEY not in ("", "YOUR_NVIDIA_API_KEY_HERE"):
+            print("  🔄 Trying NVIDIA for coarse scan...")
+            rankings = scorer.score_nvidia_coarse(prompt, cfg.NVIDIA_API_KEY, cfg.NVIDIA_MODEL)
 
     if not rankings:
         print("  ⚠ Coarse scan failed — scoring ALL chunks (slower)")
@@ -287,6 +292,15 @@ def _try_provider(
                 return []
             return scorer.score_groq(
                 words, duration, cfg.GROQ_API_KEY, cfg.GROQ_MODEL,
+                audio_hints=audio_hints, num_clips=cfg.CLIPS_PER_VIDEO,
+            )
+
+        elif provider == "nvidia":
+            if cfg.NVIDIA_API_KEY in ("", "YOUR_NVIDIA_API_KEY_HERE"):
+                print(f"  ⚠ NVIDIA API key not set — skipping")
+                return []
+            return scorer.score_nvidia(
+                words, duration, cfg.NVIDIA_API_KEY, cfg.NVIDIA_MODEL,
                 audio_hints=audio_hints, num_clips=cfg.CLIPS_PER_VIDEO,
             )
 
@@ -657,9 +671,9 @@ def main():
         help="Text file with one YouTube URL per line"
     )
     parser.add_argument(
-        "--ai", choices=["gemini", "ollama", "groq"],
+        "--ai", choices=["gemini", "ollama", "groq", "nvidia"],
         default=None,
-        help="Override AI provider from config (gemini | ollama | groq)"
+        help="Override AI provider from config (gemini | ollama | groq | nvidia)"
     )
     parser.add_argument(
         "--clips", type=int, default=None,

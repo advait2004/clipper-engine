@@ -418,6 +418,126 @@ def score_groq_coarse(
     return []
 
 
+# ─── NVIDIA (Cloud API) ─────────────────────────────────────────────────────────
+
+def score_nvidia(
+    words: list[dict],
+    duration: float,
+    api_key: str,
+    model: str = "meta/llama-3.1-70b-instruct",
+    audio_hints: str = "",
+    num_clips: int = 1,
+) -> list[dict]:
+    """
+    Score viral moments using NVIDIA's cloud API.
+    """
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    windows = build_windows(words, window=60, overlap=10)
+    prompt  = build_prompt(windows, duration)
+
+    if audio_hints:
+        prompt += "\n" + audio_hints
+
+    full_prompt = (
+        SYSTEM_PROMPT + 
+        f"\n\nCRITICAL RULE: You MUST find and return EXACTLY {num_clips} viral moments in your JSON array. Do not return more or fewer.\n\n" + 
+        prompt
+    )
+
+    backoff = [2, 10, 25]
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model":  model,
+                    "messages": [
+                        {"role": "user", "content": full_prompt}
+                    ],
+                    "temperature": 0.3
+                },
+                timeout=60
+            )
+
+            if resp.status_code == 429:
+                retry_after = resp.headers.get("Retry-After")
+                if retry_after:
+                    wait = min(int(retry_after), 60)
+                    print(f"  ⏳ Rate limited. Waiting {wait}s (Retry-After header)...")
+                    time.sleep(wait)
+                    continue
+                raise requests.exceptions.HTTPError(f"429 Too Many Requests", response=resp)
+
+            resp.raise_for_status()
+            text  = resp.json()["choices"][0]["message"]["content"].strip()
+            clips = _parse_json(text)
+            return _validate(clips, duration)
+
+        except Exception as e:
+            print(f"  ⚠ NVIDIA attempt {attempt + 1}/3 failed: {e}")
+            traceback.print_exc()
+            if attempt < 2:
+                print(f"  Retrying in {backoff[min(attempt+1, 2)]}s...")
+                time.sleep(backoff[attempt + 1])
+
+    print("  ❌ NVIDIA failed after 3 attempts")
+    return []
+
+
+def score_nvidia_coarse(
+    prompt: str,
+    api_key: str,
+    model: str = "meta/llama-3.1-70b-instruct",
+) -> list[dict]:
+    """
+    Coarse-score segments using NVIDIA.
+    """
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    full_prompt = COARSE_SYSTEM_PROMPT + "\n\n" + prompt
+
+    backoff = [2, 10, 25]
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                url,
+                headers=headers,
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": full_prompt}],
+                    "temperature": 0.3,
+                },
+                timeout=60,
+            )
+            if resp.status_code == 429:
+                retry_after = resp.headers.get("Retry-After")
+                wait = min(int(retry_after), 60) if retry_after else backoff[min(attempt, 2)]
+                print(f"  ⏳ Rate limited. Waiting {wait}s...")
+                time.sleep(wait)
+                continue
+
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return _parse_json(text)
+        except Exception as e:
+            print(f"  ⚠ NVIDIA coarse attempt {attempt + 1}/3 failed: {e}")
+            if attempt < 2:
+                time.sleep(backoff[min(attempt + 1, 2)])
+
+    print("  ❌ NVIDIA coarse scoring failed")
+    return []
+
+
+
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def _parse_json(text: str) -> list:
