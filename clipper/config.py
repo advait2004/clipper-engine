@@ -53,7 +53,8 @@ class Config:
     # "base"   = good balance (recommended for CPU)
     # "small"  = better accuracy, ~2x slower
     # "medium" = best accuracy, ~4x slower
-    WHISPER_MODEL = "medium"
+    # "large-v3" = Ultimate accuracy (requires GPU)
+    WHISPER_MODEL = "large-v3"
 
     # ─── Clip settings ────────────────────────────────────────────────────────
     CLIPS_PER_VIDEO  = 10    # Max clips to generate per video
