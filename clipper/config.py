@@ -63,7 +63,7 @@ class Config:
 
     # ─── Scoring improvements ─────────────────────────────────────────────────
     # Delay (seconds) between AI API calls to avoid rate limits (429 errors)
-    SCORER_DELAY_BETWEEN_CHUNKS = 5
+    SCORER_DELAY_BETWEEN_CHUNKS = 2
 
     # Two-pass scoring: coarse scan all chunks first, then deep-score top ones
     # Reduces API calls and focuses AI attention on the best content
