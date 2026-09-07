@@ -109,7 +109,7 @@ def _cut_reencode_flash_forward(src, start, end, flash_start, flash_dur, out_pat
         # Adding setsar=1, format=yuv420p, and aformat ensures the two clips perfectly match 
         # so the concat filter doesn't fail due to minor resolution/audio discrepancies.
         filter_complex = (
-            "[0:v]crop=iw*0.8:ih*0.8,scale=iw*1.25:ih*1.25,setsar=1,format=yuv420p,setpts=PTS-STARTPTS[v0];"
+            "[0:v]setsar=1,format=yuv420p,setpts=PTS-STARTPTS[v0];"
             "[0:a]aformat=sample_rates=44100:channel_layouts=stereo,asetpts=PTS-STARTPTS[a0];"
             "[1:v]fade=t=in:st=0:d=0.3:color=black,setsar=1,format=yuv420p,setpts=PTS-STARTPTS[v1];"
             "[1:a]aformat=sample_rates=44100:channel_layouts=stereo,asetpts=PTS-STARTPTS[a1];"
