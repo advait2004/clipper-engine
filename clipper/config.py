@@ -45,7 +45,7 @@ class Config:
     # 1. Go to https://build.nvidia.com/
     # 2. Create API key
     NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
-    NVIDIA_MODEL   = "meta/llama-3.1-70b-instruct"
+    NVIDIA_MODEL   = "nvidia/nemotron-3-super-120b-a12b"
 
 
     # ─── Whisper transcription ────────────────────────────────────────────────

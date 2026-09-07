@@ -424,7 +424,7 @@ def score_nvidia(
     words: list[dict],
     duration: float,
     api_key: str,
-    model: str = "meta/llama-3.1-70b-instruct",
+    model: str = "nvidia/nemotron-3-super-120b-a12b",
     audio_hints: str = "",
     num_clips: int = 1,
 ) -> list[dict]:
@@ -493,7 +493,7 @@ def score_nvidia(
 def score_nvidia_coarse(
     prompt: str,
     api_key: str,
-    model: str = "meta/llama-3.1-70b-instruct",
+    model: str = "nvidia/nemotron-3-super-120b-a12b",
 ) -> list[dict]:
     """
     Coarse-score segments using NVIDIA.

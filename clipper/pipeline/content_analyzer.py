@@ -166,7 +166,7 @@ def _ai_summarize(transcript_text: str, cfg: Config) -> str:
     return transcript_text[:100] + "..."
 
 
-def _summarize_nvidia(prompt: str, api_key: str, model: str) -> str:
+def _summarize_nvidia(prompt: str, api_key: str, model: str = "nvidia/nemotron-3-super-120b-a12b") -> str:
     """Summarize via NVIDIA API."""
     import requests
     import time
