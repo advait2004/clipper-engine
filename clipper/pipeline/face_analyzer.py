@@ -138,8 +138,11 @@ class FaceAnalyzer:
 
         # ── 1. Try MediaPipe Tasks FaceLandmarker (latest API) ────────────────
         try:
-            # Force skip Tasks API on Windows due to clearcut telemetry deadlocks
-            raise Exception("Skipping Tasks API to prevent clearcut telemetry hang on Windows")
+            import urllib.request
+            
+            # Only skip on Windows
+            if os.name == 'nt':
+                raise Exception("Skipping Tasks API to prevent clearcut telemetry hang on Windows")
             
             import mediapipe as mp
             from mediapipe.tasks.python import BaseOptions
@@ -147,6 +150,11 @@ class FaceAnalyzer:
             from mediapipe.tasks.python.vision.core.vision_task_running_mode import RunningMode
 
             model_path = os.path.join(project_root, "face_landmarker.task")
+            if not os.path.isfile(model_path):
+                print("    FaceAnalyzer: Downloading face_landmarker.task (this only happens once)...")
+                url = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+                urllib.request.urlretrieve(url, model_path)
+
             if os.path.isfile(model_path):
                 self._mp = mp
                 
@@ -194,8 +202,8 @@ class FaceAnalyzer:
             self._backend = "face_mesh"
             print("    FaceAnalyzer: Using MediaPipe solutions FaceMesh (478 landmarks)")
             return
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"    FaceAnalyzer: legacy FaceMesh unavailable ({e})")
 
         # ── 3. Try MediaPipe Tasks FaceDetector (basic bounding box) ──────────
         try:
@@ -217,8 +225,8 @@ class FaceAnalyzer:
                 self._backend = "face_detector_tasks"
                 print("    FaceAnalyzer: Using MediaPipe Tasks FaceDetector (basic, no lip data)")
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"    FaceAnalyzer: Tasks FaceDetector unavailable ({e})")
 
         # ── 4. Fallback: legacy MediaPipe solutions FaceDetection ─────────────
         try:
