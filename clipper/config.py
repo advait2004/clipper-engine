@@ -21,7 +21,7 @@ class Config:
     # "ollama"  → fully local, zero cost, needs ollama installed
     # "groq"    → very fast cloud (generous free tier)
     # "nvidia"  → high performance cloud API (NVIDIA NIM)
-    AI_PROVIDER = "groq"
+    AI_PROVIDER = "nvidia"
 
     # ─── Gemini (free tier) ───────────────────────────────────────────────────
     # 1. Go to https://aistudio.google.com/apikey
