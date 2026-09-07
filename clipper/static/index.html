@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipper Engine — AI Video Editor</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    <div class="container">
+        <header>
+            <h1>Clipper <span class="highlight">Engine</span></h1>
+            <p>AI-powered automatic video editor</p>
+        </header>
+
+        <main>
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="single" id="mode-single-btn">
+                    <span class="mode-icon">🎬</span>
+                    Single File / URL
+                </button>
+                <button class="mode-btn" data-mode="folder" id="mode-folder-btn">
+                    <span class="mode-icon">📁</span>
+                    Folder Batch
+                </button>
+            </div>
+
+            <!-- ─── Single File Form ─────────────────────────────────────── -->
+            <div class="card form-card" id="single-form-card">
+                <form id="clip-form">
+                    <div class="input-group">
+                        <label for="url">YouTube URL or Local File Path</label>
+                        <input type="text" id="url" name="url" placeholder="https://youtu.be/... or C:\video.mp4" required>
+                    </div>
+
+                    <!-- Caption Style Selector (Single Mode) -->
+                    <div class="input-group">
+                        <label>Caption Style</label>
+                        <div class="style-selector" id="single-caption-selector"></div>
+                    </div>
+
+                    <!-- Virality Mode Toggle -->
+                    <div class="smart-edit-toggle">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="virality-mode" checked>
+                            <div class="checkbox-custom"></div>
+                            Enable Virality System (2026)
+                        </label>
+                        <div class="toggle-hint">
+                            Applies hook/CTA overlays, removes filler words, enforces archetype pacing, and adds intro zoom.
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="clips-per-video">Clips to Generate (Per Video)</label>
+                        <input type="number" id="clips-per-video" name="clips_per_video" min="1" max="10" value="1">
+                    </div>
+
+                    <button type="submit" id="submit-btn">
+                        <span class="btn-text">Generate Clips</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ─── Folder Batch Form ────────────────────────────────────── -->
+            <div class="card form-card hidden" id="folder-form-card">
+                <form id="folder-form">
+                    <div class="input-group">
+                        <label for="folder-path">Folder Path</label>
+                        <input type="text" id="folder-path" name="folder_path" placeholder="C:\Users\videos\clips" required>
+                    </div>
+
+                    <!-- Processing Mode -->
+                    <div class="input-group">
+                        <label for="processing-mode">Processing Mode</label>
+                        <select id="processing-mode" name="mode" class="style-selector">
+                            <option value="merge_all">Merge Folder (Smart Edit) - Combine all clips into one video</option>
+                            <option value="jumpcut_each">Jump-Cut Each Video - Auto-edit each video individually</option>
+                            <option value="extract_highlights">Extract Highlights - Extract continuous raw clips individually</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="batch-clips-per-video">Clips to Generate (Per Video)</label>
+                        <input type="number" id="batch-clips-per-video" name="clips_per_video" min="1" max="10" value="1">
+                    </div>
+
+                    <!-- Caption Style (Always visible) -->
+                    <div class="input-group">
+                        <label>Caption Style</label>
+                        <div class="style-selector" id="folder-caption-selector"></div>
+                    </div>
+
+                    <!-- Edit Style Selector (visible when Smart Edit is on) -->
+                    <div id="smart-edit-options">
+                        <div class="input-group">
+                            <label>Edit Style</label>
+                            <div class="style-selector style-selector-large" id="edit-style-selector"></div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="num-variations">Variations to Generate</label>
+                            <input type="number" id="num-variations" name="num_variations" min="1" max="5" value="1">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="folder-submit-btn">
+                        <span class="btn-text">Process Folder</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ─── Single Job Status ────────────────────────────────────── -->
+            <div id="status-card" class="card status-card hidden">
+                <div class="status-header">
+                    <h2>Job Status</h2>
+                    <span id="job-badge" class="badge pending">Pending</span>
+                </div>
+                <p id="job-message">Waiting to start...</p>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <button id="cancel-btn" class="cancel-btn hidden">Cancel Job</button>
+                <div id="results-container" class="results-container hidden">
+                    <h3>Generated Clips</h3>
+                    <ul id="clips-list"></ul>
+                </div>
+            </div>
+
+            <!-- ─── Batch / Smart Edit Status ────────────────────────────── -->
+            <div id="batch-status-card" class="card status-card hidden">
+                <div class="status-header">
+                    <h2 id="batch-title">Batch Status</h2>
+                    <span id="batch-badge" class="badge pending">Pending</span>
+                </div>
+                <p id="batch-message">Scanning folder...</p>
+                <div class="progress-bar-container">
+                    <div id="batch-progress-bar" class="progress-bar"></div>
+                </div>
+                <button id="batch-cancel-btn" class="cancel-btn hidden">Cancel</button>
+
+                <div id="batch-jobs-container" class="batch-jobs-container hidden">
+                    <h3>Files</h3>
+                    <div id="batch-jobs-list"></div>
+                </div>
+
+                <div id="batch-results-container" class="results-container hidden">
+                    <h3>Generated Clips</h3>
+                    <ul id="batch-clips-list"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/app.js?v=7"></script>
+</body>
+</html>

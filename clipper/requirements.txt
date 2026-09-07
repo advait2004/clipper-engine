@@ -1,0 +1,35 @@
+# ─── Core pipeline ────────────────────────────────────────────────────────────
+yt-dlp>=2024.1.1              # YouTube downloader
+faster-whisper>=1.0.0         # Local speech-to-text (word timestamps)
+opencv-python>=4.8.0          # Video frame reading
+numpy>=1.24.0                 # Numerical utilities
+
+# ─── AI scoring (pick one) ────────────────────────────────────────────────────
+google-generativeai>=0.8.0    # Gemini Flash free tier (recommended)
+requests>=2.31.0              # Ollama local API calls
+
+# ─── Face detection for 9:16 reframing ────────────────────────────────────────
+mediapipe>=0.10.0             # Face detection for smart crop
+
+# ─── Sound effects ────────────────────────────────────────────────────────────
+soundfile>=0.12.0             # Write synthetic audio to WAV for FFmpeg mixing
+
+# ─── Advanced reframing (optional) ────────────────────────────────────────
+# MediaPipe (already listed above) includes Face Mesh — no extra dep needed.
+# Audio-based speaker diarization dependencies:
+pyannote.audio>=3.1.0       # Speaker diarization (requires HuggingFace token)
+torch>=2.0.0                # Required by pyannote (large download)
+
+# ─── Notes ────────────────────────────────────────────────────────────────────
+# ffmpeg must be installed separately (NOT via pip):
+#   Mac:   brew install ffmpeg
+#   Linux: sudo apt install ffmpeg
+#   Win:   https://ffmpeg.org/download.html  (add to PATH)
+#
+# faster-whisper pulls in ctranslate2 and torch automatically.
+# faster-whisper pulls in ctranslate2 and torch automatically.
+# First run downloads the Whisper model weights (~150 MB for "base").
+
+# ─── Web Interface ────────────────────────────────────────────────────────────
+fastapi>=0.100.0              # Web API framework
+uvicorn>=0.23.0               # ASGI server for FastAPI
