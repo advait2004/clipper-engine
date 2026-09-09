@@ -170,9 +170,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     progressBar.style.background = '#10b981';
                     if (job.clips && job.clips.length > 0) {
                         resultsContainer.classList.remove('hidden');
-                        job.clips.forEach(clip => {
+                        job.clips.forEach((clip, idx) => {
+                            const filename = clip.split(/[\\/]/).pop();
+                            const clipUrl = `/clips/${filename}`;
                             const li = document.createElement('li');
-                            li.textContent = clip.split(/[\\/]/).pop();
+                            li.className = 'clip-result-item';
+                            li.innerHTML = `
+                                <div class="clip-label">🎬 Clip ${idx + 1} — ${filename}</div>
+                                <video controls preload="metadata" class="clip-video">
+                                    <source src="${clipUrl}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <a href="${clipUrl}" download="${filename}" class="download-btn">⬇️ Download</a>
+                            `;
                             clipsList.appendChild(li);
                         });
                     }
@@ -315,9 +325,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (batch.all_clips && batch.all_clips.length > 0) {
                         batchResultsContainer.classList.remove('hidden');
-                        batch.all_clips.forEach(clip => {
+                        batch.all_clips.forEach((clip, idx) => {
+                            const filename = clip.split(/[\\/]/).pop();
+                            const clipUrl = `/clips/${filename}`;
                             const li = document.createElement('li');
-                            li.textContent = clip.split(/[\\/]/).pop();
+                            li.className = 'clip-result-item';
+                            li.innerHTML = `
+                                <div class="clip-label">🎬 Clip ${idx + 1} — ${filename}</div>
+                                <video controls preload="metadata" class="clip-video">
+                                    <source src="${clipUrl}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <a href="${clipUrl}" download="${filename}" class="download-btn">⬇️ Download</a>
+                            `;
                             batchClipsList.appendChild(li);
                         });
                     }

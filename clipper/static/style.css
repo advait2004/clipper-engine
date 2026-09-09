@@ -593,3 +593,51 @@ button[type="submit"]:disabled {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.5);
 }
+
+/* ─── Video Player & Download ─────────────────────────────────────────────── */
+
+.clip-result-item {
+    list-style: none;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.clip-result-item:hover {
+    border-color: var(--accent);
+}
+
+.clip-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.clip-video {
+    width: 100%;
+    max-height: 500px;
+    border-radius: 8px;
+    background: #000;
+    margin-bottom: 12px;
+}
+
+.download-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
