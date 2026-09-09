@@ -69,7 +69,7 @@ def _score_with_fallback(
     3. Per-chunk fallback chain (Groq → Gemini → Ollama)
     4. Audio energy hints passed to AI
     """
-    MAX_BLOCK = 600.0  # 10 minutes
+    MAX_BLOCK = 180.0  # 3 minutes (Smaller chunks to prevent NVIDIA API timeouts)
     if duration <= MAX_BLOCK:
         return _score_single_block(words, duration, cfg, audio_hints)
 
