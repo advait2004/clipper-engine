@@ -338,7 +338,7 @@ def score_groq(
                     ],
                     "temperature": 0.3
                 },
-                timeout=60
+                timeout=120
             )
 
             # ── Respect Retry-After header on 429 ────────────────────────────
@@ -397,7 +397,7 @@ def score_groq_coarse(
                     "messages": [{"role": "user", "content": full_prompt}],
                     "temperature": 0.3,
                 },
-                timeout=60,
+                timeout=120,
             )
             if resp.status_code == 429:
                 retry_after = resp.headers.get("Retry-After")
@@ -462,7 +462,7 @@ def score_nvidia(
                     ],
                     "temperature": 0.3
                 },
-                timeout=60
+                timeout=120
             )
 
             if resp.status_code == 429:
@@ -516,7 +516,7 @@ def score_nvidia_coarse(
                     "messages": [{"role": "user", "content": full_prompt}],
                     "temperature": 0.3,
                 },
-                timeout=60,
+                timeout=120,
             )
             if resp.status_code == 429:
                 retry_after = resp.headers.get("Retry-After")

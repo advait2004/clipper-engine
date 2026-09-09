@@ -179,7 +179,7 @@ def _try_plan_groq(prompt: str, cfg: Config, temperature: float = 0.3) -> list[d
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": temperature,
                 },
-                timeout=60,
+                timeout=120,
             )
             if resp.status_code == 429:
                 retry = resp.headers.get("Retry-After")

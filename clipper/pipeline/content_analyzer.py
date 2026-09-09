@@ -184,7 +184,7 @@ def _summarize_nvidia(prompt: str, api_key: str, model: str = "nvidia/nemotron-3
             "temperature": 0.3,
             "max_tokens": 100,
         },
-        timeout=30,
+        timeout=120,
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"].strip()
@@ -208,7 +208,7 @@ def _summarize_groq(prompt: str, api_key: str, model: str) -> str:
             "temperature": 0.3,
             "max_tokens": 100,
         },
-        timeout=30,
+        timeout=120,
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"].strip()
