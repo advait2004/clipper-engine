@@ -90,7 +90,13 @@ def _score_with_fallback(
                 "words": chunk_words,
             })
             idx += 1
-        chunk_start = chunk_end
+        
+        # Advance with a 60-second overlap to prevent slicing clips in half
+        OVERLAP = 60.0
+        step = MAX_BLOCK - OVERLAP
+        if chunk_end >= duration:
+            break
+        chunk_start += step
 
     print(f"  Created {len(chunks)} chunks")
 
