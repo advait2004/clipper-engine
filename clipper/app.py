@@ -45,6 +45,11 @@ class BatchJobRequest(BaseModel):
     clips_per_video: int = 1
 
 
+class ScriptJobRequest(BaseModel):
+    script_text: str
+    caption_style: str = "karaoke"
+
+
 class JobCancelledError(Exception):
     pass
 
@@ -81,6 +86,41 @@ def process_job_task(
     except JobCancelledError as e:
         jobs[job_id]["status"] = JobStatus.ERROR
         jobs[job_id]["error"] = str(e)
+    except Exception as e:
+        jobs[job_id]["status"] = JobStatus.ERROR
+        jobs[job_id]["error"] = str(e)
+
+
+def process_script_task(job_id: str, script_text: str, caption_style: str):
+    from main import process_script
+    
+    jobs[job_id]["status"] = JobStatus.PROCESSING
+
+    def check_cancel():
+        if jobs.get(job_id, {}).get("cancelled"):
+            raise JobCancelledError("Job was cancelled by the user")
+
+    def update_progress(pct: int, msg: str):
+        if jobs.get(job_id, {}).get("cancelled"):
+            raise JobCancelledError("Job was cancelled by the user")
+        jobs[job_id]["progress"] = pct
+        jobs[job_id]["stage"] = msg
+
+    cfg = Config()
+    cfg.CAPTION_STYLE = caption_style
+    # Ensure virality mode things are enabled for script videos
+    cfg.VIRALITY_MODE = True
+    cfg.HOOK_TEXT_OVERLAY = False # Usually scripts don't need the text overlay hook at start
+
+    try:
+        clips = process_script(script_text, cfg, set_progress=update_progress, check_cancel=check_cancel)
+        jobs[job_id]["status"] = JobStatus.DONE
+        jobs[job_id]["clips"] = clips
+        jobs[job_id]["progress"] = 100
+        jobs[job_id]["stage"] = "Completed"
+    except JobCancelledError:
+        jobs[job_id]["status"] = JobStatus.ERROR
+        jobs[job_id]["error"] = "Cancelled"
     except Exception as e:
         jobs[job_id]["status"] = JobStatus.ERROR
         jobs[job_id]["error"] = str(e)
@@ -449,6 +489,21 @@ async def create_job(req: JobRequest, background_tasks: BackgroundTasks):
         "stage": "Starting...",
     }
     background_tasks.add_task(process_job_task, job_id, req.url, req.caption_style, req.virality_mode, req.clips_per_video)
+    return {"job_id": job_id}
+
+
+@app.post("/api/script-job")
+async def create_script_job(req: ScriptJobRequest, background_tasks: BackgroundTasks):
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {
+        "status": JobStatus.PENDING,
+        "url": "Script-to-Video",
+        "clips": [],
+        "error": None,
+        "progress": 0,
+        "stage": "Starting...",
+    }
+    background_tasks.add_task(process_script_task, job_id, req.script_text, req.caption_style)
     return {"job_id": job_id}
 
 

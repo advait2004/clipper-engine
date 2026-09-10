@@ -636,6 +636,110 @@ def process_video(url: str, cfg: Config, progress_callback=None) -> list[str]:
     return output
 
 
+# ─── Script-to-Video ──────────────────────────────────────────────────────────
+
+def process_script(script_text: str, cfg: Config, set_progress=lambda p, s: None, check_cancel=lambda: None) -> list[str]:
+    """
+    Full pipeline to turn a text script into a finished viral video.
+    """
+    _banner(f"Processing Script ({len(script_text)} chars)")
+    
+    from pipeline.script_parser import parse_script_to_scenes
+    from pipeline.tts_engine import generate_tts
+    from pipeline.broll_fetcher import fetch_broll_for_scenes
+    from pipeline.video_builder import build_faceless_video
+    
+    stamp = datetime.now().strftime("%H%M%S")
+    os.makedirs(cfg.TEMP_DIR, exist_ok=True)
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    
+    try:
+        # 1. Parse Script
+        set_progress(10, "Parsing script to scenes...")
+        check_cancel()
+        scenes = parse_script_to_scenes(script_text, cfg)
+        
+        # 2. TTS Generation
+        set_progress(30, "Generating AI Voiceover...")
+        check_cancel()
+        audio_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_voice.mp3")
+        vtt_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_voice.vtt")
+        words = generate_tts(script_text, audio_path, vtt_path, cfg)
+        
+        # 3. Fetch Stock Footage
+        set_progress(50, "Fetching Stock Footage...")
+        check_cancel()
+        broll_files = fetch_broll_for_scenes(scenes, cfg.TEMP_DIR, cfg)
+        
+        # 4. Stitch Video
+        set_progress(70, "Stitching video together...")
+        check_cancel()
+        base_video = os.path.join(cfg.TEMP_DIR, f"{stamp}_base.mp4")
+        build_faceless_video(broll_files, audio_path, base_video)
+        
+        # 5. Reframe (Center any faces in the stock footage)
+        set_progress(80, "Reframing and centering...")
+        check_cancel()
+        rf_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_rf.mp4")
+        reframer.reframe(base_video, rf_path, cfg=cfg)
+        
+        # 6. Burn Captions
+        set_progress(90, "Burning karaoke captions...")
+        check_cancel()
+        cap_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_cap.mp4")
+        
+        # Determine duration from last word
+        duration = words[-1]["end"] if words else 10.0
+        
+        captioner.burn_all_captions(
+            rf_path,
+            words,
+            0.0,
+            duration,
+            cap_path,
+            style_name=getattr(cfg, 'CAPTION_STYLE', 'karaoke'),
+            words_per_line=cfg.CAPTION_WORDS_PER_LINE,
+            font_size=cfg.CAPTION_FONT_SIZE,
+            uppercase=cfg.CAPTION_UPPERCASE,
+            hook_text_overlay="",
+            cta_line="",
+        )
+        
+        # 7. Sound Effects
+        set_progress(95, "Adding sound effects & music...")
+        check_cancel()
+        final_path = os.path.join(cfg.OUTPUT_DIR, f"{stamp}_script_final.mp4")
+        if cfg.SOUND_EFFECTS_ENABLED:
+            sound_effects.add_sound_effects(
+                cap_path,
+                words,
+                0.0,
+                final_path,
+                bg_volume=cfg.SFX_BG_VOLUME,
+                whoosh_volume=cfg.SFX_WHOOSH_VOLUME,
+                impact_volume=cfg.SFX_IMPACT_VOLUME,
+            )
+        else:
+            import shutil
+            shutil.copy2(cap_path, final_path)
+            
+        print(f"  ✅ Script Video Saved: {os.path.basename(final_path)}")
+        set_progress(100, "Done")
+        
+        return [final_path]
+        
+    except Exception as e:
+        print(f"\n❌ Error processing script: {e}")
+        import traceback; traceback.print_exc()
+        raise e
+        
+    finally:
+        if cfg.DELETE_TEMP:
+            # Clean up temp b-roll and intermediate files
+            for root, dirs, files in os.walk(cfg.TEMP_DIR):
+                for file in files:
+                    safe_remove(os.path.join(root, file))
+
 # ─── Batch ────────────────────────────────────────────────────────────────────
 
 def batch_process(urls: list[str], cfg: Config):

@@ -2,8 +2,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Element refs ────────────────────────────────────────────────────────
     const modeSingleBtn = document.getElementById('mode-single-btn');
     const modeFolderBtn = document.getElementById('mode-folder-btn');
+    const modeScriptBtn = document.getElementById('mode-script-btn');
     const singleFormCard = document.getElementById('single-form-card');
     const folderFormCard = document.getElementById('folder-form-card');
+    const scriptFormCard = document.getElementById('script-form-card');
 
     // Single mode
     const form = document.getElementById('clip-form');
@@ -39,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // State for selected styles
     let selectedCaptionSingle = 'karaoke';
     let selectedCaptionFolder = 'karaoke';
+    let selectedCaptionScript = 'karaoke';
     let selectedEditStyle = 'podcast';
 
     // ─── Load styles from API ────────────────────────────────────────────────
@@ -56,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     renderCaptionSelector('folder-caption-selector', stylesData.caption_styles, selectedCaptionFolder, (id) => {
         selectedCaptionFolder = id;
+    });
+    renderCaptionSelector('script-caption-selector', stylesData.caption_styles, selectedCaptionScript, (id) => {
+        selectedCaptionScript = id;
     });
     renderEditStyleSelector('edit-style-selector', stylesData.edit_styles, selectedEditStyle, (id) => {
         selectedEditStyle = id;
@@ -77,12 +83,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Mode Toggle ─────────────────────────────────────────────────────────
     modeSingleBtn.addEventListener('click', () => switchMode('single'));
     modeFolderBtn.addEventListener('click', () => switchMode('folder'));
+    modeScriptBtn.addEventListener('click', () => switchMode('script'));
 
     function switchMode(mode) {
         modeSingleBtn.classList.toggle('active', mode === 'single');
         modeFolderBtn.classList.toggle('active', mode === 'folder');
+        modeScriptBtn.classList.toggle('active', mode === 'script');
         singleFormCard.classList.toggle('hidden', mode !== 'single');
         folderFormCard.classList.toggle('hidden', mode !== 'folder');
+        scriptFormCard.classList.toggle('hidden', mode !== 'script');
         statusCard.classList.add('hidden');
         batchStatusCard.classList.add('hidden');
     }
@@ -142,6 +151,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             handleSingleError(error.message);
         }
     });
+
+    // ─── Script Job ──────────────────────────────────────────────────────────
+    const scriptForm = document.getElementById('script-form');
+    const scriptSubmitBtn = document.getElementById('script-submit-btn');
+
+    scriptForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const scriptText = document.getElementById('script-text').value;
+
+        statusCard.classList.remove('hidden');
+        batchStatusCard.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        clipsList.innerHTML = '';
+        updateBadge(jobBadge, 'pending', 'Starting...');
+        progressBar.classList.add('indeterminate');
+        progressBar.style.width = '100%';
+        progressBar.style.background = 'linear-gradient(90deg, #3b82f6, #8b5cf6)';
+        cancelBtn.classList.add('hidden');
+        scriptSubmitBtn.disabled = true;
+        scriptSubmitBtn.querySelector('.btn-text').textContent = 'Generating...';
+        scriptSubmitBtn.querySelector('.spinner').classList.remove('hidden');
+
+        try {
+            const response = await fetch('/api/script-job', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    script_text: scriptText, 
+                    caption_style: selectedCaptionScript
+                })
+            });
+            if (!response.ok) throw new Error('Failed to create script job');
+            const data = await response.json();
+            currentJobId = data.job_id;
+            pollJob(data.job_id); // Re-use the same polling as single job
+        } catch (error) {
+            handleSingleError(error.message);
+            resetScriptForm();
+        }
+    });
+
+    function resetScriptForm() {
+        scriptSubmitBtn.disabled = false;
+        scriptSubmitBtn.querySelector('.btn-text').textContent = 'Generate Video';
+        scriptSubmitBtn.querySelector('.spinner').classList.add('hidden');
+    }
 
     function pollJob(jobId) {
         if (pollInterval) clearInterval(pollInterval);

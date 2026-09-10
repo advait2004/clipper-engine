@@ -31,6 +31,10 @@
                     <span class="mode-icon">📁</span>
                     Folder Batch
                 </button>
+                <button class="mode-btn" data-mode="script" id="mode-script-btn">
+                    <span class="mode-icon">📝</span>
+                    Script-to-Video
+                </button>
             </div>
 
             <!-- ─── Single File Form ─────────────────────────────────────── -->
@@ -115,6 +119,26 @@
 
                     <button type="submit" id="folder-submit-btn">
                         <span class="btn-text">Process Folder</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ─── Script Form ──────────────────────────────────────────── -->
+            <div class="card form-card hidden" id="script-form-card">
+                <form id="script-form">
+                    <div class="input-group">
+                        <label for="script-text">Video Script</label>
+                        <textarea id="script-text" name="script_text" rows="8" placeholder="Paste your video script here... The AI will generate stock footage, voiceover, and captions." required style="width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 12px; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Caption Style</label>
+                        <div class="style-selector" id="script-caption-selector"></div>
+                    </div>
+
+                    <button type="submit" id="script-submit-btn">
+                        <span class="btn-text">Generate Video</span>
                         <div class="spinner hidden"></div>
                     </button>
                 </form>

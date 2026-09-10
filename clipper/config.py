@@ -135,6 +135,10 @@ class Config:
     INTRO_ZOOM               = True     # 10% zoom on first 0.5s of each clip
     FLASH_FORWARD_HOOK       = True     # Cut 3s internal highlight and paste at the start
 
+    # ─── Script-to-Video Mode ─────────────────────────────────────────────────
+    PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
+    TTS_VOICE      = "en-US-ChristopherNeural"  # Default edge-tts voice
+
     # ─── Cleanup ───────────────────────────────────────────────────────────
     DELETE_RAW  = True    # Delete raw downloaded video after processing
     DELETE_TEMP = True    # Delete intermediate temp files
