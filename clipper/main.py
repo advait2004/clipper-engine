@@ -641,58 +641,77 @@ def process_video(url: str, cfg: Config, progress_callback=None) -> list[str]:
 def process_script(script_text: str, cfg: Config, set_progress=lambda p, s: None, check_cancel=lambda: None) -> list[str]:
     """
     Full pipeline to turn a text script into a finished viral video.
+
+    Pipeline:
+      1. AI parses script → visual scenes with Pexels search queries
+      2. edge-tts generates voiceover + Whisper extracts word timestamps
+      3. Pexels API fetches stock footage per scene
+      4. Video builder stitches B-roll (scene-synced) + TTS audio
+      5. Captioner burns karaoke captions
+      6. Sound effects (optional)
     """
     _banner(f"Processing Script ({len(script_text)} chars)")
-    
+
     from pipeline.script_parser import parse_script_to_scenes
     from pipeline.tts_engine import generate_tts
     from pipeline.broll_fetcher import fetch_broll_for_scenes
     from pipeline.video_builder import build_faceless_video
-    
-    stamp = datetime.now().strftime("%H%M%S")
+
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     os.makedirs(cfg.TEMP_DIR, exist_ok=True)
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-    
+
     try:
-        # 1. Parse Script
-        set_progress(10, "Parsing script to scenes...")
+        # ── 1. Parse Script into Scenes ───────────────────────────────────────
+        set_progress(5, "Parsing script into visual scenes...")
         check_cancel()
         scenes = parse_script_to_scenes(script_text, cfg)
-        
-        # 2. TTS Generation
-        set_progress(30, "Generating AI Voiceover...")
+        print(f"  Parsed {len(scenes)} scenes")
+        for i, sc in enumerate(scenes, 1):
+            print(f"    Scene {i}: \"{sc['text'][:60]}...\" → search: \"{sc['search_query']}\"")
+
+        # ── 2. TTS Generation ─────────────────────────────────────────────────
+        set_progress(15, "Generating AI voiceover...")
         check_cancel()
         audio_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_voice.mp3")
         vtt_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_voice.vtt")
         words = generate_tts(script_text, audio_path, vtt_path, cfg)
-        
-        # 3. Fetch Stock Footage
-        set_progress(50, "Fetching Stock Footage...")
+
+        if not words:
+            raise RuntimeError("TTS generated no words — cannot continue.")
+
+        # ── 2.5 Compute per-scene voiceover durations ─────────────────────────
+        # Map each scene's text to its corresponding word timestamps
+        # so each B-roll clip matches exactly its scene's spoken duration
+        scene_durations = _compute_scene_durations(scenes, words)
+        print(f"  Scene durations: {[f'{d:.1f}s' for d in scene_durations]}")
+
+        # ── 3. Fetch Stock Footage ────────────────────────────────────────────
+        set_progress(35, "Fetching stock footage from Pexels...")
         check_cancel()
         broll_files = fetch_broll_for_scenes(scenes, cfg.TEMP_DIR, cfg)
-        
-        # 4. Stitch Video
-        set_progress(70, "Stitching video together...")
+
+        # ── 4. Stitch Video (scene-synced) ────────────────────────────────────
+        set_progress(60, "Stitching B-roll with voiceover...")
         check_cancel()
         base_video = os.path.join(cfg.TEMP_DIR, f"{stamp}_base.mp4")
-        build_faceless_video(broll_files, audio_path, base_video)
-        
-        # 5. Reframe (Center any faces in the stock footage)
-        set_progress(80, "Reframing and centering...")
-        check_cancel()
-        rf_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_rf.mp4")
-        reframer.reframe(base_video, rf_path, cfg=cfg)
-        
-        # 6. Burn Captions
-        set_progress(90, "Burning karaoke captions...")
+        build_faceless_video(
+            broll_files, audio_path, base_video,
+            scene_durations=scene_durations,
+            cfg=cfg,
+        )
+
+        # ── 5. Burn Captions ──────────────────────────────────────────────────
+        # (Skip reframer — stock footage is already well-composed and rarely
+        #  has faces that need tracking. Saves 2-4 minutes of processing.)
+        set_progress(80, "Burning karaoke captions...")
         check_cancel()
         cap_path = os.path.join(cfg.TEMP_DIR, f"{stamp}_cap.mp4")
-        
-        # Determine duration from last word
+
         duration = words[-1]["end"] if words else 10.0
-        
+
         captioner.burn_all_captions(
-            rf_path,
+            base_video,
             words,
             0.0,
             duration,
@@ -704,9 +723,9 @@ def process_script(script_text: str, cfg: Config, set_progress=lambda p, s: None
             hook_text_overlay="",
             cta_line="",
         )
-        
-        # 7. Sound Effects
-        set_progress(95, "Adding sound effects & music...")
+
+        # ── 6. Sound Effects ──────────────────────────────────────────────────
+        set_progress(93, "Adding sound effects & music...")
         check_cancel()
         final_path = os.path.join(cfg.OUTPUT_DIR, f"{stamp}_script_final.mp4")
         if cfg.SOUND_EFFECTS_ENABLED:
@@ -722,23 +741,76 @@ def process_script(script_text: str, cfg: Config, set_progress=lambda p, s: None
         else:
             import shutil
             shutil.copy2(cap_path, final_path)
-            
-        print(f"  ✅ Script Video Saved: {os.path.basename(final_path)}")
+
+        size_mb = os.path.getsize(final_path) / 1_048_576
+        print(f"  ✅ Script Video Saved: {os.path.basename(final_path)} ({size_mb:.1f} MB)")
         set_progress(100, "Done")
-        
+
         return [final_path]
-        
+
     except Exception as e:
         print(f"\n❌ Error processing script: {e}")
         import traceback; traceback.print_exc()
         raise e
-        
+
     finally:
         if cfg.DELETE_TEMP:
             # Clean up temp b-roll and intermediate files
             for root, dirs, files in os.walk(cfg.TEMP_DIR):
                 for file in files:
                     safe_remove(os.path.join(root, file))
+
+
+def _compute_scene_durations(scenes: list[dict], words: list[dict]) -> list[float]:
+    """
+    Map each scene's text to its corresponding word timestamps to compute
+    how long the voiceover takes for each scene.
+
+    Strategy: walk through the word list and match words to each scene's text.
+    When a scene's words are exhausted, the next scene starts from the next word.
+    """
+    if not scenes or not words:
+        return []
+
+    num_scenes = len(scenes)
+    durations = []
+    word_idx = 0
+    total_words = len(words)
+
+    for scene_idx, scene in enumerate(scenes):
+        scene_text = scene.get("text", "")
+        # Count words in this scene's text
+        scene_word_count = len(scene_text.split())
+
+        if scene_word_count == 0:
+            durations.append(2.0)  # Minimum 2 seconds for empty scenes
+            continue
+
+        # Find start and end word indices for this scene
+        start_word_idx = word_idx
+        end_word_idx = min(word_idx + scene_word_count, total_words)
+
+        if start_word_idx >= total_words:
+            # Ran out of words — use a minimum duration
+            durations.append(2.0)
+            continue
+
+        scene_start = words[start_word_idx]["start"]
+
+        # For the last scene, extend to the end of the audio
+        if scene_idx == num_scenes - 1:
+            scene_end = words[-1]["end"]
+        else:
+            scene_end = words[min(end_word_idx - 1, total_words - 1)]["end"]
+
+        duration = max(scene_end - scene_start, 1.5)  # At least 1.5 seconds
+        durations.append(round(duration, 2))
+
+        word_idx = end_word_idx
+
+    return durations
+
+
 
 # ─── Batch ────────────────────────────────────────────────────────────────────
 

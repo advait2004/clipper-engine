@@ -138,6 +138,7 @@ class Config:
     # ─── Script-to-Video Mode ─────────────────────────────────────────────────
     PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
     TTS_VOICE      = "en-US-ChristopherNeural"  # Default edge-tts voice
+    TTS_WORD_LEVEL = True   # Re-transcribe TTS audio with Whisper for accurate karaoke timestamps
 
     # ─── Cleanup ───────────────────────────────────────────────────────────
     DELETE_RAW  = True    # Delete raw downloaded video after processing

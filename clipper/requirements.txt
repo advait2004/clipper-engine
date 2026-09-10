@@ -30,6 +30,9 @@ torch>=2.0.0                # Required by pyannote (large download)
 # faster-whisper pulls in ctranslate2 and torch automatically.
 # First run downloads the Whisper model weights (~150 MB for "base").
 
+# ─── Script-to-Video ──────────────────────────────────────────────────────────
+edge-tts>=6.1.0               # Microsoft Edge free TTS API (realistic AI voices)
+
 # ─── Web Interface ────────────────────────────────────────────────────────────
 fastapi>=0.100.0              # Web API framework
 uvicorn>=0.23.0               # ASGI server for FastAPI
