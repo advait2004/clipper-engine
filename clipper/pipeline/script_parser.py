@@ -20,10 +20,10 @@ Your job is to break the script down into logical visual scenes (usually 1-2 sen
 For EACH scene, generate an optimized search query for Pexels Video API to find the perfect B-roll.
 
 Guidelines for Pexels Search Queries:
-1. Keep it simple and literal (e.g., "man working on laptop", "city skyline night", "coffee pouring").
-2. Do not use abstract concepts (e.g., "financial freedom" is bad, "money falling" is good).
-3. Use 2-4 keywords maximum.
-4. Avoid overly specific actions that are hard to find.
+1. Pexels search is very literal and rigid. You must use ONLY 1 or 2 extremely generic keywords.
+2. Good examples: "laptop", "city", "money", "crowd", "nature", "running".
+3. BAD examples (DO NOT DO THIS): "man working on laptop", "city skyline night", "stock market red chart falling".
+4. Never use abstract concepts like "financial freedom" or "success". Use literal objects instead (e.g., "money", "trophy").
 
 Output exactly a JSON array of objects. Do not include markdown blocks like ```json.
 Each object must have exactly two keys: "text" (the exact text of the script for this scene) and "search_query" (the Pexels query).

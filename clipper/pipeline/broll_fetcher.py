@@ -120,8 +120,8 @@ def _find_best_video(query: str, headers: dict) -> str | None:
     if not videos:
         return None
 
-    # Pick a random video from results to keep things fresh
-    video = random.choice(videos)
+    # Pick the top result for maximum relevance
+    video = videos[0]
     return _get_best_file_link(video)
 
 
